@@ -4,26 +4,20 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-namespace EditorAssetTools
-{
-    //########copyright-->2019/3/5 LuoYao
-
+namespace EditorAssetTools {
     /// <summary>
     /// 资源或文件夹批量改名
     /// </summary>
-    public class ModifyNameAssetTool : BaseAssetTool
-    {
-        class NameInfo
-        {
+    public class ModifyNameAssetTool : BaseAssetTool {
+        class NameInfo {
             public UnityEngine.Object obj;
             public string origin_name;
             public string new_name;
-            public NameInfo(UnityEngine.Object obj, string origin_name){
+            public NameInfo(UnityEngine.Object obj, string origin_name) {
                 this.obj = obj; this.origin_name = origin_name; new_name = string.Copy(origin_name);
             }
         }
-        class CustomConvertInfo
-        {
+        class CustomConvertInfo {
             public string convertChar = string.Empty;
             public int initValue = 0;
             public int operationChar = 0;
@@ -36,61 +30,54 @@ namespace EditorAssetTools
         string m_TargetName = null;
         CustomConvertInfo m_CustomConvertInfo = new CustomConvertInfo();
 
-        public override string Name{
-            get{ return "批量命名"; }
+        public override string Name {
+            get { return "批量命名"; }
         }
 
-        public override void DoInit()
-        {
+        public override void DoInit() {
             base.DoInit();
             UpdateSelectObjects();
             m_TargetName = "Test@";
             m_CustomConvertInfo.convertChar = "@";
             UpdateObjectsNewName();
         }
-        public override void DoDestroy()
-        {
+        public override void DoDestroy() {
             base.DoDestroy();
         }
-        public override void OnSelectChange()
-        {
+        public override void OnSelectChange() {
             base.OnSelectChange();
             UpdateSelectObjects();
             UpdateObjectsNewName();
         }
-        void UpdateSelectObjects()
-        {
+        void UpdateSelectObjects() {
             UnityEngine.Object[] select_objects = Selection.GetFiltered<UnityEngine.Object>(SelectionMode.Unfiltered);
-            if (select_objects.Length > 0){
+            if (select_objects.Length > 0) {
                 m_NameInfoArray = new NameInfo[select_objects.Length];
                 List<NameInfo> name_list = new List<NameInfo>(select_objects.Length);
-                for (int i = 0; i < select_objects.Length; ++i){
+                for (int i = 0; i < select_objects.Length; ++i) {
                     UnityEngine.Object obj = select_objects[i];
                     name_list.Add(new NameInfo(obj, obj.name));
                 }
-                name_list.Sort((info_a, info_b) =>
-                {
+                name_list.Sort((info_a, info_b) => {
                     GameObject obj_a = info_a.obj as GameObject;
                     GameObject obj_b = info_b.obj as GameObject;
-                    if (obj_a != null && obj_b != null){
+                    if (obj_a != null && obj_b != null) {
                         int a_index = obj_a.transform.GetSiblingIndex();
                         int b_index = obj_b.transform.GetSiblingIndex();
                         return a_index.CompareTo(b_index);
                     }
                     string a_name = info_a.origin_name;
                     string b_name = info_b.origin_name;
-                    if (!string.IsNullOrEmpty(a_name) && !string.IsNullOrEmpty(b_name)){
+                    if (!string.IsNullOrEmpty(a_name) && !string.IsNullOrEmpty(b_name)) {
                         return a_name.CompareTo(b_name);
                     }
                     return -1;
                 });
                 name_list.CopyTo(m_NameInfoArray);
-            }
-            else m_NameInfoArray = null;
+            } else m_NameInfoArray = null;
         }
-        public override void OnGUI()
-        {
-            if (m_NameInfoArray == null || m_NameInfoArray.Length == 0){
+        public override void OnGUI() {
+            if (m_NameInfoArray == null || m_NameInfoArray.Length == 0) {
                 EditorGUILayout.HelpBox("请先选中要改名的资源，文件夹或场景里的物体", MessageType.Warning);
                 return;
             }
@@ -104,10 +91,10 @@ namespace EditorAssetTools
                 AssetDatabase.SaveAssets();
                 UpdateSelectObjects();
             }
-            if (GUILayout.Button("重置")){
+            if (GUILayout.Button("重置")) {
                 m_TargetName = null;
                 m_CustomConvertInfo = new CustomConvertInfo();
-                for (int k = 0; k < m_NameInfoArray.Length; ++k){
+                for (int k = 0; k < m_NameInfoArray.Length; ++k) {
                     NameInfo info = m_NameInfoArray[k];
                     info.new_name = info.origin_name;
                 }
@@ -126,7 +113,7 @@ namespace EditorAssetTools
             EditorGUILayout.LabelField(string.Empty, GUILayout.Width(kNameWidth));
             EditorGUILayout.LabelField("改后名字", GUILayout.Width(kNameWidth));
             EditorGUILayout.EndHorizontal();
-            for (int i = 0; i < m_NameInfoArray.Length; ++i){
+            for (int i = 0; i < m_NameInfoArray.Length; ++i) {
                 NameInfo name_info = m_NameInfoArray[i];
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField(name_info.origin_name, GUILayout.Width(kNameWidth));
@@ -135,8 +122,7 @@ namespace EditorAssetTools
                 EditorGUILayout.EndHorizontal();
             }
         }
-        void UpdateCustomNamesOnGUI()
-        {
+        void UpdateCustomNamesOnGUI() {
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("名字格式：", GUILayout.Width(70));
             m_TargetName = EditorGUILayout.TextField(m_TargetName, GUILayout.Width(150));
@@ -149,16 +135,15 @@ namespace EditorAssetTools
             m_CustomConvertInfo.rate = EditorGUILayout.IntField(m_CustomConvertInfo.rate, GUILayout.Width(100));
             EditorGUILayout.EndHorizontal();
         }
-        void UpdateObjectsNewName()
-        {
-            if(m_NameInfoArray == null || m_NameInfoArray.Length == 0) {
+        void UpdateObjectsNewName() {
+            if (m_NameInfoArray == null || m_NameInfoArray.Length == 0) {
                 return;
             }
             if (string.IsNullOrEmpty(m_TargetName)) {
                 return;
             }
-            if (string.IsNullOrEmpty(m_CustomConvertInfo.convertChar)){
-                foreach(var nameInfo in m_NameInfoArray) {
+            if (string.IsNullOrEmpty(m_CustomConvertInfo.convertChar)) {
+                foreach (var nameInfo in m_NameInfoArray) {
                     nameInfo.new_name = string.Copy(m_TargetName);
                 }
                 return;
@@ -170,23 +155,19 @@ namespace EditorAssetTools
             int maxUnsignedValueLength = 1;
             for (int i = 0; i < objectNameCount; ++i) {
                 switch (operationChar) {
-                    case "+":
-                        {
+                    case "+": {
                             value += m_CustomConvertInfo.rate;
                             break;
                         }
-                    case "-":
-                        {
+                    case "-": {
                             value -= m_CustomConvertInfo.rate;
                             break;
                         }
-                    case "*":
-                        {
+                    case "*": {
                             value *= m_CustomConvertInfo.rate;
                             break;
                         }
-                    case "%":
-                        {
+                    case "%": {
                             value = m_CustomConvertInfo.rate == 0 ? value : (value / m_CustomConvertInfo.rate);
                             break;
                         }
@@ -195,7 +176,7 @@ namespace EditorAssetTools
                 string unsignedValueStr = Mathf.Abs(value).ToString();
                 maxUnsignedValueLength = Mathf.Max(maxUnsignedValueLength, unsignedValueStr.Length);
             }
-            for(int i = 0; i < objectNameCount; ++i) {
+            for (int i = 0; i < objectNameCount; ++i) {
                 NameInfo nameInfo = m_NameInfoArray[i];
                 int numValue = numValueArray[i];
                 string unsignedValueStr = Mathf.Abs(numValue).ToString();
