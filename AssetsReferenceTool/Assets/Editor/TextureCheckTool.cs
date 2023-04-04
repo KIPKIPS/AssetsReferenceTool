@@ -79,7 +79,7 @@ namespace EditorAssetTools {
                 GUI.contentColor = guiColor;
                 ++curItemIndex;
                 for (var k = 0; k < uObjInfo.refPathList.Count; ++k) {
-                    if (curItemIndex >= this._scrollItemIndex && curItemIndex <= this._scrollItemIndex + kViewItemCount) {
+                    if (curItemIndex >= _scrollItemIndex && curItemIndex <= _scrollItemIndex + kViewItemCount) {
                         EditorGUILayout.BeginHorizontal();
                         var path = uObjInfo.refPathList[k];
                         EditorGUILayout.LabelField($"\t{k}.{path}");
