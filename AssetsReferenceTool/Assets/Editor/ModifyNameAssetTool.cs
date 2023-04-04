@@ -1,102 +1,96 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using Object = UnityEngine.Object;
 
 namespace EditorAssetTools {
     /// <summary>
     /// 资源或文件夹批量改名
     /// </summary>
     public class ModifyNameAssetTool : BaseAssetTool {
-        class NameInfo {
-            public UnityEngine.Object obj;
-            public string origin_name;
-            public string new_name;
-            public NameInfo(UnityEngine.Object obj, string origin_name) {
-                this.obj = obj; this.origin_name = origin_name; new_name = string.Copy(origin_name);
+        private class NameInfo {
+            public readonly Object obj;
+            public readonly string originName;
+            public string newName;
+            public NameInfo(Object obj, string originName) {
+                this.obj = obj; this.originName = originName; newName = string.Copy(originName);
             }
         }
-        class CustomConvertInfo {
+
+        private class CustomConvertInfo {
             public string convertChar = string.Empty;
-            public int initValue = 0;
-            public int operationChar = 0;
+            public int initValue;
+            public int operationChar;
             public int rate = 1;
         }
 
-        const int kNameWidth = 150;
-        readonly string[] kOperationStringList = new string[4] { "+", "-", "*", "%" };
-        NameInfo[] m_NameInfoArray = null;
-        string m_TargetName = null;
-        CustomConvertInfo m_CustomConvertInfo = new CustomConvertInfo();
+        private const int KNameWidth = 150;
+        private readonly string[] _operationStringList = { "+", "-", "*", "%" };
+        private NameInfo[] _nameInfoArray;
+        private string _targetName;
+        private CustomConvertInfo _customConvertInfo = new();
 
-        public override string Name {
-            get { return "批量命名"; }
-        }
+        public override string Name => "批量命名";
 
         public override void DoInit() {
             base.DoInit();
             UpdateSelectObjects();
-            m_TargetName = "Test@";
-            m_CustomConvertInfo.convertChar = "@";
+            _targetName = "Test@";
+            _customConvertInfo.convertChar = "@";
             UpdateObjectsNewName();
         }
-        public override void DoDestroy() {
-            base.DoDestroy();
-        }
+
         public override void OnSelectChange() {
             base.OnSelectChange();
             UpdateSelectObjects();
             UpdateObjectsNewName();
         }
-        void UpdateSelectObjects() {
-            UnityEngine.Object[] select_objects = Selection.GetFiltered<UnityEngine.Object>(SelectionMode.Unfiltered);
-            if (select_objects.Length > 0) {
-                m_NameInfoArray = new NameInfo[select_objects.Length];
-                List<NameInfo> name_list = new List<NameInfo>(select_objects.Length);
-                for (int i = 0; i < select_objects.Length; ++i) {
-                    UnityEngine.Object obj = select_objects[i];
-                    name_list.Add(new NameInfo(obj, obj.name));
+        private void UpdateSelectObjects() {
+            var selectObjects = Selection.GetFiltered<Object>(SelectionMode.Unfiltered);
+            if (selectObjects.Length > 0) {
+                _nameInfoArray = new NameInfo[selectObjects.Length];
+                var nameList = new List<NameInfo>(selectObjects.Length);
+                foreach (var obj in selectObjects) {
+                    nameList.Add(new NameInfo(obj, obj.name));
                 }
-                name_list.Sort((info_a, info_b) => {
-                    GameObject obj_a = info_a.obj as GameObject;
-                    GameObject obj_b = info_b.obj as GameObject;
-                    if (obj_a != null && obj_b != null) {
-                        int a_index = obj_a.transform.GetSiblingIndex();
-                        int b_index = obj_b.transform.GetSiblingIndex();
-                        return a_index.CompareTo(b_index);
+                nameList.Sort((info_a, info_b) => {
+                    var objA = info_a.obj as GameObject;
+                    var objB = info_b.obj as GameObject;
+                    if (objA != null && objB != null) {
+                        var indexA = objA.transform.GetSiblingIndex();
+                        var indexB = objB.transform.GetSiblingIndex();
+                        return indexA.CompareTo(indexB);
                     }
-                    string a_name = info_a.origin_name;
-                    string b_name = info_b.origin_name;
-                    if (!string.IsNullOrEmpty(a_name) && !string.IsNullOrEmpty(b_name)) {
-                        return a_name.CompareTo(b_name);
+                    var nameA = info_a.originName;
+                    var nameB = info_b.originName;
+                    if (!string.IsNullOrEmpty(nameA) && !string.IsNullOrEmpty(nameB)) {
+                        return string.Compare(nameA, nameB, StringComparison.Ordinal);
                     }
                     return -1;
                 });
-                name_list.CopyTo(m_NameInfoArray);
-            } else m_NameInfoArray = null;
+                nameList.CopyTo(_nameInfoArray);
+            } else _nameInfoArray = null;
         }
         public override void OnGUI() {
-            if (m_NameInfoArray == null || m_NameInfoArray.Length == 0) {
+            if (_nameInfoArray == null || _nameInfoArray.Length == 0) {
                 EditorGUILayout.HelpBox("请先选中要改名的资源，文件夹或场景里的物体", MessageType.Warning);
                 return;
             }
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("确定改名")) {
-                for (int k = 0; k < m_NameInfoArray.Length; ++k) {
-                    NameInfo cur_name_info = m_NameInfoArray[k];
-                    if (string.IsNullOrEmpty(cur_name_info.new_name)) continue;
-                    ObjectNames.SetNameSmart(cur_name_info.obj, cur_name_info.new_name); //同步改变：对象名，meta文件名，资源文件名
+                foreach (var curNameInfo in _nameInfoArray) {
+                    if (string.IsNullOrEmpty(curNameInfo.newName)) continue;
+                    ObjectNames.SetNameSmart(curNameInfo.obj, curNameInfo.newName); //同步改变：对象名，meta文件名，资源文件名
                 }
                 AssetDatabase.SaveAssets();
                 UpdateSelectObjects();
             }
             if (GUILayout.Button("重置")) {
-                m_TargetName = null;
-                m_CustomConvertInfo = new CustomConvertInfo();
-                for (int k = 0; k < m_NameInfoArray.Length; ++k) {
-                    NameInfo info = m_NameInfoArray[k];
-                    info.new_name = info.origin_name;
+                _targetName = null;
+                _customConvertInfo = new CustomConvertInfo();
+                foreach (var info in _nameInfoArray) {
+                    info.newName = info.originName;
                 }
             }
             EditorGUILayout.EndHorizontal();
@@ -109,84 +103,83 @@ namespace EditorAssetTools {
 
             EditorGUILayout.LabelField("----------------------------结果预览----------------------------");
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("原名字", GUILayout.Width(kNameWidth));
-            EditorGUILayout.LabelField(string.Empty, GUILayout.Width(kNameWidth));
-            EditorGUILayout.LabelField("改后名字", GUILayout.Width(kNameWidth));
+            EditorGUILayout.LabelField("原名字", GUILayout.Width(KNameWidth));
+            EditorGUILayout.LabelField(string.Empty, GUILayout.Width(KNameWidth));
+            EditorGUILayout.LabelField("改后名字", GUILayout.Width(KNameWidth));
             EditorGUILayout.EndHorizontal();
-            for (int i = 0; i < m_NameInfoArray.Length; ++i) {
-                NameInfo name_info = m_NameInfoArray[i];
+            foreach (var nameInfo in _nameInfoArray) {
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(name_info.origin_name, GUILayout.Width(kNameWidth));
-                EditorGUILayout.LabelField("-->", GUILayout.Width(kNameWidth));
-                EditorGUILayout.LabelField(name_info.new_name, GUILayout.Width(kNameWidth));
+                EditorGUILayout.LabelField(nameInfo.originName, GUILayout.Width(KNameWidth));
+                EditorGUILayout.LabelField("-->", GUILayout.Width(KNameWidth));
+                EditorGUILayout.LabelField(nameInfo.newName, GUILayout.Width(KNameWidth));
                 EditorGUILayout.EndHorizontal();
             }
         }
-        void UpdateCustomNamesOnGUI() {
+        private void UpdateCustomNamesOnGUI() {
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("名字格式：", GUILayout.Width(70));
-            m_TargetName = EditorGUILayout.TextField(m_TargetName, GUILayout.Width(150));
+            _targetName = EditorGUILayout.TextField(_targetName, GUILayout.Width(150));
             EditorGUILayout.LabelField("转换字符：", GUILayout.Width(70));
-            m_CustomConvertInfo.convertChar = EditorGUILayout.TextField(m_CustomConvertInfo.convertChar, GUILayout.Width(100));
+            _customConvertInfo.convertChar = EditorGUILayout.TextField(_customConvertInfo.convertChar, GUILayout.Width(100));
             EditorGUILayout.LabelField("初始值：", GUILayout.Width(50));
-            m_CustomConvertInfo.initValue = EditorGUILayout.IntField(m_CustomConvertInfo.initValue, GUILayout.Width(100));
-            m_CustomConvertInfo.operationChar = EditorGUILayout.Popup(m_CustomConvertInfo.operationChar, kOperationStringList, GUILayout.Width(50));
+            _customConvertInfo.initValue = EditorGUILayout.IntField(_customConvertInfo.initValue, GUILayout.Width(100));
+            _customConvertInfo.operationChar = EditorGUILayout.Popup(_customConvertInfo.operationChar, _operationStringList, GUILayout.Width(50));
             EditorGUILayout.LabelField("运算值：", GUILayout.Width(50));
-            m_CustomConvertInfo.rate = EditorGUILayout.IntField(m_CustomConvertInfo.rate, GUILayout.Width(100));
+            _customConvertInfo.rate = EditorGUILayout.IntField(_customConvertInfo.rate, GUILayout.Width(100));
             EditorGUILayout.EndHorizontal();
         }
-        void UpdateObjectsNewName() {
-            if (m_NameInfoArray == null || m_NameInfoArray.Length == 0) {
+        private void UpdateObjectsNewName() {
+            if (_nameInfoArray == null || _nameInfoArray.Length == 0) {
                 return;
             }
-            if (string.IsNullOrEmpty(m_TargetName)) {
+            if (string.IsNullOrEmpty(_targetName)) {
                 return;
             }
-            if (string.IsNullOrEmpty(m_CustomConvertInfo.convertChar)) {
-                foreach (var nameInfo in m_NameInfoArray) {
-                    nameInfo.new_name = string.Copy(m_TargetName);
+            if (string.IsNullOrEmpty(_customConvertInfo.convertChar)) {
+                foreach (var nameInfo in _nameInfoArray) {
+                    nameInfo.newName = string.Copy(_targetName);
                 }
                 return;
             }
-            string operationChar = kOperationStringList[m_CustomConvertInfo.operationChar];
-            int value = m_CustomConvertInfo.initValue;
-            int objectNameCount = m_NameInfoArray.Length;
-            int[] numValueArray = new int[objectNameCount];
-            int maxUnsignedValueLength = 1;
-            for (int i = 0; i < objectNameCount; ++i) {
+            var operationChar = _operationStringList[_customConvertInfo.operationChar];
+            var value = _customConvertInfo.initValue;
+            var objectNameCount = _nameInfoArray.Length;
+            var numValueArray = new int[objectNameCount];
+            var maxUnsignedValueLength = 1;
+            for (var i = 0; i < objectNameCount; ++i) {
                 switch (operationChar) {
                     case "+": {
-                            value += m_CustomConvertInfo.rate;
+                            value += _customConvertInfo.rate;
                             break;
                         }
                     case "-": {
-                            value -= m_CustomConvertInfo.rate;
+                            value -= _customConvertInfo.rate;
                             break;
                         }
                     case "*": {
-                            value *= m_CustomConvertInfo.rate;
+                            value *= _customConvertInfo.rate;
                             break;
                         }
                     case "%": {
-                            value = m_CustomConvertInfo.rate == 0 ? value : (value / m_CustomConvertInfo.rate);
+                            value = _customConvertInfo.rate == 0 ? value : (value / _customConvertInfo.rate);
                             break;
                         }
                 }
                 numValueArray[i] = value;
-                string unsignedValueStr = Mathf.Abs(value).ToString();
+                var unsignedValueStr = Mathf.Abs(value).ToString();
                 maxUnsignedValueLength = Mathf.Max(maxUnsignedValueLength, unsignedValueStr.Length);
             }
-            for (int i = 0; i < objectNameCount; ++i) {
-                NameInfo nameInfo = m_NameInfoArray[i];
-                int numValue = numValueArray[i];
-                string unsignedValueStr = Mathf.Abs(numValue).ToString();
+            for (var i = 0; i < objectNameCount; ++i) {
+                var nameInfo = _nameInfoArray[i];
+                var numValue = numValueArray[i];
+                var unsignedValueStr = Mathf.Abs(numValue).ToString();
                 while (unsignedValueStr.Length < maxUnsignedValueLength) {
                     unsignedValueStr = "0" + unsignedValueStr;
                 }
                 if (numValue < 0) {
                     unsignedValueStr = "-" + unsignedValueStr;
                 }
-                nameInfo.new_name = m_TargetName.Replace(m_CustomConvertInfo.convertChar, unsignedValueStr);
+                nameInfo.newName = _targetName.Replace(_customConvertInfo.convertChar, unsignedValueStr);
             }
         }
     }

@@ -1,12 +1,11 @@
-﻿using System.IO;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using System;
+
 namespace EditorAssetTools {
     public abstract class BasePrefabAssetTool : BaseAssetTool {
-        float scroll_item_index = 0;
+        private float _scrollItemIndex;
 
         protected class ItemData {
             public GameObject prefab;
@@ -14,117 +13,110 @@ namespace EditorAssetTools {
             public List<Component> comp_list;
         }
 
-        List<ItemData> m_item_data_list = new List<ItemData>();
-
-        public override void DoInit() {
-            base.DoInit();
-        }
-        public override void DoDestroy() {
-            base.DoDestroy();
-        }
+        private readonly List<ItemData> _itemDataList = new();
 
         protected void DrawDefaultHeader() {
-            if (!string.IsNullOrEmpty(select_asset_path)) {
-                EditorGUILayout.LabelField("当前选择的查找路径：" + select_asset_path);
+            if (!string.IsNullOrEmpty(selectAssetPath)) {
+                EditorGUILayout.LabelField("当前选择的查找路径：" + selectAssetPath);
             } else {
                 EditorGUILayout.HelpBox("请先从Project窗口右侧选择需要查找的Prefab或文件夹", MessageType.Info);
             }
             GUILayout.Space(10);
         }
         protected void DrawSearchButton() {
-            if (!string.IsNullOrEmpty(select_asset_path) && GUILayout.Button("开始查找")) {
-                try { DoSearch(); } finally { EditorUtility.ClearProgressBar(); }
+            if (string.IsNullOrEmpty(selectAssetPath) || !GUILayout.Button("开始查找")) return;
+            try {
+                DoSearch();
+            } finally {
+                EditorUtility.ClearProgressBar();
             }
         }
 
         protected void DrawTargetPrefabAssetList(Action<Component, ItemData> draw_comp_action) {
             GUILayout.Space(10);
-            EditorGUILayout.LabelField(string.Format("找到目标Prefab总数--> {0}", m_item_data_list.Count));
+            EditorGUILayout.LabelField($"找到目标Prefab总数--> {_itemDataList.Count}");
             GUILayout.Space(10);
-            Event cur_evt = Event.current;
-            if (cur_evt != null && cur_evt.isScrollWheel) {
-                scroll_item_index += cur_evt.delta.y;
-                cur_evt.Use();
+            var curEvt = Event.current;
+            if (curEvt is {
+                isScrollWheel: true
+            }) {
+                _scrollItemIndex += curEvt.delta.y;
+                curEvt.Use();
             }
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.BeginVertical();
-            const int k_view_item_count = 25;
-            int cur_item_index = 0;
-            for (int idx = 0; idx < m_item_data_list.Count; ++idx) {
-                var item_data = m_item_data_list[idx];
-                Color gui_color = GUI.contentColor;
+            const int kViewItemCount = 25;
+            var curItemIndex = 0;
+            for (var idx = 0; idx < _itemDataList.Count; ++idx) {
+                var itemData = _itemDataList[idx];
+                var guiColor = GUI.contentColor;
                 GUI.contentColor = Color.green;
-                if (cur_item_index >= scroll_item_index && cur_item_index <= scroll_item_index + k_view_item_count) {
-                    using (var hor_scope = new EditorGUILayout.HorizontalScope()) {
-                        EditorGUILayout.LabelField(string.Format("目标Prefab#{0}--> {1}", idx, item_data.prefab_path));
-                        if (GUILayout.Button("定位资源", GUILayout.Width(200))) {
-                            Selection.activeObject = item_data.prefab;
-                        }
+                if (curItemIndex >= _scrollItemIndex && curItemIndex <= _scrollItemIndex + kViewItemCount) {
+                    using var horScope = new EditorGUILayout.HorizontalScope();
+                    EditorGUILayout.LabelField($"目标Prefab#{idx}--> {itemData.prefab_path}");
+                    if (GUILayout.Button("定位资源", GUILayout.Width(200))) {
+                        Selection.activeObject = itemData.prefab;
                     }
                 }
-                GUI.contentColor = gui_color;
-                ++cur_item_index;
-                for (int k = 0; k < item_data.comp_list.Count; ++k) {
-                    if (cur_item_index >= this.scroll_item_index && cur_item_index <= this.scroll_item_index + k_view_item_count) {
-                        UnityEngine.Component comp = item_data.comp_list[k];
+                GUI.contentColor = guiColor;
+                ++curItemIndex;
+                for (var k = 0; k < itemData.comp_list.Count; ++k) {
+                    if (curItemIndex >= _scrollItemIndex && curItemIndex <= _scrollItemIndex + kViewItemCount) {
+                        var comp = itemData.comp_list[k];
                         if (draw_comp_action != null) {
-                            draw_comp_action(comp, item_data);
+                            draw_comp_action(comp, itemData);
                         } else {
                             EditorGUILayout.BeginHorizontal();
-                            EditorGUILayout.LabelField(string.Format("\t{0}.{1}", k, comp.ToString()));
+                            EditorGUILayout.LabelField($"\t{k}.{comp}");
                             if (GUILayout.Button("定位", GUILayout.Width(100))) {
-                                base.TryLocationPrefabInstanceChildByComponent(item_data.prefab, comp);
+                                TryLocationPrefabInstanceChildByComponent(itemData.prefab, comp);
                             }
                             EditorGUILayout.EndHorizontal();
                         }
                     }
-                    ++cur_item_index;
+                    ++curItemIndex;
                 }
             }
             EditorGUILayout.EndVertical();
-            float scroll_max_value = cur_item_index - k_view_item_count;
-            scroll_item_index = GUILayout.VerticalScrollbar(scroll_item_index, 0, 0f, scroll_max_value + 1, GUILayout.ExpandHeight(true));
+            float scrollMAXValue = curItemIndex - kViewItemCount;
+            _scrollItemIndex = GUILayout.VerticalScrollbar(_scrollItemIndex, 0, 0f, scrollMAXValue + 1, GUILayout.ExpandHeight(true));
             EditorGUILayout.EndHorizontal();
         }
 
-        protected void DoSearch() {
-            if (string.IsNullOrEmpty(select_asset_path)) {
+        private void DoSearch() {
+            if (string.IsNullOrEmpty(selectAssetPath)) {
                 return;
             }
-            List<string> all_obj_path_list = new List<string>();
-            GetAssetPathsFromDirectory(select_asset_path, ref all_obj_path_list);
-            if (all_obj_path_list.Count == 0) {
+            var allObjPathList = new List<string>();
+            GetAssetPathsFromDirectory(selectAssetPath, ref allObjPathList);
+            if (allObjPathList.Count == 0) {
                 return;
             }
-            m_item_data_list.Clear();
+            _itemDataList.Clear();
             DoPrefabCheckStart();
-            int obj_path_count = all_obj_path_list.Count;
-            for (int idx = 0; idx < obj_path_count; ++idx) {
-                string asset_path = all_obj_path_list[idx];
-                EditorUtility.DisplayProgressBar("Check Asset", asset_path, (float)idx / all_obj_path_list.Count);
-                if (asset_path.EndsWith(".prefab")) {
-                    GameObject go = AssetDatabase.LoadAssetAtPath<GameObject>(asset_path);
-                    if (go == null) continue;
-                    List<Component> target_comp_list = new List<Component>();
-                    IsTargetPrefab(go, target_comp_list);
-                    if (target_comp_list.Count > 0) {
-                        ItemData item = new ItemData() {
-                            prefab = go,
-                            prefab_path = asset_path,
-                            comp_list = target_comp_list
-                        };
-                        m_item_data_list.Add(item);
-                    }
-                }
+            var objPathCount = allObjPathList.Count;
+            for (var idx = 0; idx < objPathCount; ++idx) {
+                var assetPath = allObjPathList[idx];
+                EditorUtility.DisplayProgressBar("Check Asset", assetPath, (float) idx / allObjPathList.Count);
+                if (!assetPath.EndsWith(".prefab")) continue;
+                var go = AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
+                if (go == null) continue;
+                var targetCompList = new List<Component>();
+                IsTargetPrefab(go, targetCompList);
+                if (targetCompList.Count <= 0) continue;
+                var item = new ItemData() {
+                    prefab = go,
+                    prefab_path = assetPath,
+                    comp_list = targetCompList
+                };
+                _itemDataList.Add(item);
             }
-            m_item_data_list.Sort((item_a, item_b) => string.Compare(item_a.prefab_path, item_b.prefab_path));
+            _itemDataList.Sort((itemA, itemB) => string.CompareOrdinal(itemA.prefab_path, itemB.prefab_path));
         }
 
-        virtual protected void DoPrefabCheckStart() {
-
+        private static void DoPrefabCheckStart() {
         }
-        virtual protected void IsTargetPrefab(GameObject prefab_go, List<Component> comp_list) {
-
+        protected virtual void IsTargetPrefab(GameObject prefabGo, List<Component> compList) {
         }
     }
 }
