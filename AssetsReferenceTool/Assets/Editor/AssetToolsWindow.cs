@@ -14,10 +14,10 @@ namespace EditorAssetTools {
         private int _toolIndex = -1;
         private string[] _toolDisplayArray;
         private readonly BaseAssetTool[] _toolArray = {
-            //new ModifyNameAssetTool(),
+            new ModifyNameAssetTool(),
             new ReferenceSearchAssetTool(),
-            //new TextureCheckTool(),
-            //new TransparentGraphicPrefabCheckTool(),
+            new TextureCheckTool(),
+            new TransparentGraphicPrefabCheckTool(),
         };
         private static void OpenToolsWindow() { //打开窗口
             if (Application.isPlaying) {
