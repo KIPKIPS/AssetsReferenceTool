@@ -12,18 +12,18 @@ namespace EditorAssetTools {
 
         public override string Name => "透明的UI Graphic";
 
-        protected override void IsTargetPrefab(GameObject prefab_go, List<Component> comp_list) {
-            foreach (var graphic in prefab_go.GetComponentsInChildren<Graphic>(true)) {
-                if (IsTargetGraphic(graphic)) comp_list.Add(graphic);
+        protected override void IsTargetPrefab(GameObject prefabGo, List<Component> compList) {
+            foreach (var graphic in prefabGo.GetComponentsInChildren<Graphic>(true)) {
+                if (IsTargetGraphic(graphic)) compList.Add(graphic);
             }
         }
 
-        private static bool IsTargetGraphic(Graphic ui_graphic) {
-            if (!StTargetGraphicDict.ContainsKey(ui_graphic.GetType())) {
+        private static bool IsTargetGraphic(Graphic uiGraphic) {
+            if (!StTargetGraphicDict.ContainsKey(uiGraphic.GetType())) {
                 return false;
             }
-            var uiShader = ui_graphic.material != null ? ui_graphic.material.shader : null;
-            if (ui_graphic.color.a < 0.001f && (uiShader == null || uiShader.name != "XianXia/UIStencilMask")) {
+            var uiShader = uiGraphic.material != null ? uiGraphic.material.shader : null;
+            if (uiGraphic.color.a < 0.001f && (uiShader == null || uiShader.name != "XianXia/UIStencilMask")) {
                 return true;
             }
             return false;

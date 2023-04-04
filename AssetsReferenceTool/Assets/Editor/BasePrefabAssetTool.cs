@@ -9,8 +9,8 @@ namespace EditorAssetTools {
 
         protected class ItemData {
             public GameObject prefab;
-            public string prefab_path;
-            public List<Component> comp_list;
+            public string prefabPath;
+            public List<Component> compList;
         }
 
         private readonly List<ItemData> _itemDataList = new();
@@ -32,7 +32,7 @@ namespace EditorAssetTools {
             }
         }
 
-        protected void DrawTargetPrefabAssetList(Action<Component, ItemData> draw_comp_action) {
+        protected void DrawTargetPrefabAssetList(Action<Component, ItemData> drawCompAction) {
             GUILayout.Space(10);
             EditorGUILayout.LabelField($"找到目标Prefab总数--> {_itemDataList.Count}");
             GUILayout.Space(10);
@@ -53,18 +53,18 @@ namespace EditorAssetTools {
                 GUI.contentColor = Color.green;
                 if (curItemIndex >= _scrollItemIndex && curItemIndex <= _scrollItemIndex + kViewItemCount) {
                     using var horScope = new EditorGUILayout.HorizontalScope();
-                    EditorGUILayout.LabelField($"目标Prefab#{idx}--> {itemData.prefab_path}");
+                    EditorGUILayout.LabelField($"目标Prefab#{idx}--> {itemData.prefabPath}");
                     if (GUILayout.Button("定位资源", GUILayout.Width(200))) {
                         Selection.activeObject = itemData.prefab;
                     }
                 }
                 GUI.contentColor = guiColor;
                 ++curItemIndex;
-                for (var k = 0; k < itemData.comp_list.Count; ++k) {
+                for (var k = 0; k < itemData.compList.Count; ++k) {
                     if (curItemIndex >= _scrollItemIndex && curItemIndex <= _scrollItemIndex + kViewItemCount) {
-                        var comp = itemData.comp_list[k];
-                        if (draw_comp_action != null) {
-                            draw_comp_action(comp, itemData);
+                        var comp = itemData.compList[k];
+                        if (drawCompAction != null) {
+                            drawCompAction(comp, itemData);
                         } else {
                             EditorGUILayout.BeginHorizontal();
                             EditorGUILayout.LabelField($"\t{k}.{comp}");
@@ -106,12 +106,12 @@ namespace EditorAssetTools {
                 if (targetCompList.Count <= 0) continue;
                 var item = new ItemData() {
                     prefab = go,
-                    prefab_path = assetPath,
-                    comp_list = targetCompList
+                    prefabPath = assetPath,
+                    compList = targetCompList
                 };
                 _itemDataList.Add(item);
             }
-            _itemDataList.Sort((itemA, itemB) => string.CompareOrdinal(itemA.prefab_path, itemB.prefab_path));
+            _itemDataList.Sort((itemA, itemB) => string.CompareOrdinal(itemA.prefabPath, itemB.prefabPath));
         }
 
         private static void DoPrefabCheckStart() {

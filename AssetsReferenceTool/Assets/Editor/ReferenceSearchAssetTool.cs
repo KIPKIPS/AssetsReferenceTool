@@ -149,15 +149,15 @@ namespace EditorAssetTools {
             EditorGUILayout.EndHorizontal();
         }
 
-        private void TryDrawLocationComponent(string path_a, string path_b) {
+        private void TryDrawLocationComponent(string pathA, string pathB) {
             string assetPath = null;
             string prefabPath = null;
-            if (path_a.EndsWith(".prefab") && GUILayout.Button("定位组件", GUILayout.Width(100))) {
-                assetPath = path_b;
-                prefabPath = path_a;
-            } else if (path_b.EndsWith(".prefab") && GUILayout.Button("定位组件", GUILayout.Width(100))) {
-                assetPath = path_a;
-                prefabPath = path_b;
+            if (pathA.EndsWith(".prefab") && GUILayout.Button("定位组件", GUILayout.Width(100))) {
+                assetPath = pathB;
+                prefabPath = pathA;
+            } else if (pathB.EndsWith(".prefab") && GUILayout.Button("定位组件", GUILayout.Width(100))) {
+                assetPath = pathA;
+                prefabPath = pathB;
             }
             if (assetPath != null) {
                 TryLocationPrefabComponentByAsset(assetPath, prefabPath);
@@ -204,7 +204,7 @@ namespace EditorAssetTools {
                     }
                 }
             } else {
-                var totalProcessCount = _assetsDependenciesDict.Count; // = all_lua_data_dict.Count;
+                var totalProcessCount = _assetsDependenciesDict.Count;
                 foreach (var kv in _assetsDependenciesDict) {
                     var curAssetPath = kv.Key;
                     var assetDependenciesArray = kv.Value;
@@ -248,38 +248,36 @@ namespace EditorAssetTools {
                 }
             }
             if (string.IsNullOrEmpty(hintStr)) return;
-            if (EditorUtility.DisplayDialog("删除资源", hintStr, "确定（资源删除后不能恢复）", "取消")) {
-                for (var i = _searchObjList.Count - 1; i >= 0; --i) {
-                    var objInfo = _searchObjList[i];
-                    if (objInfo.isSelect) {
-                        AssetDatabase.DeleteAsset(objInfo.objPath);
-                        _searchObjList.RemoveAt(i);
-                    }
-                }
-                _assetsDependenciesDict = null;
-                AssetDatabase.RemoveUnusedAssetBundleNames();
-                AssetDatabase.Refresh();
+            if (!EditorUtility.DisplayDialog("删除资源", hintStr, "确定（资源删除后不能恢复）", "取消")) return;
+            for (var i = _searchObjList.Count - 1; i >= 0; --i) {
+                var objInfo = _searchObjList[i];
+                if (!objInfo.isSelect) continue;
+                AssetDatabase.DeleteAsset(objInfo.objPath);
+                _searchObjList.RemoveAt(i);
             }
+            _assetsDependenciesDict = null;
+            AssetDatabase.RemoveUnusedAssetBundleNames();
+            AssetDatabase.Refresh();
         }
-        private void DoSortList(SortType sort_type) {
+        private void DoSortList(SortType sortType) {
             if (_searchObjList == null) return;
-            int CompareFunc(string path_a, string path_b) {
+            int CompareFunc(string pathA, string pathB) {
                 var compareV = 0;
-                switch (sort_type) {
+                switch (sortType) {
                     case SortType.Type: {
-                        var a = Path.GetExtension(path_a);
-                        var b = Path.GetExtension(path_b);
+                        var a = Path.GetExtension(pathA);
+                        var b = Path.GetExtension(pathB);
                         compareV = string.Compare(a, b, StringComparison.Ordinal);
                         break;
                     }
                     case SortType.TexSizeUp:
                     case SortType.TexSizeDown: {
-                        var texAssetA = AssetDatabase.LoadAssetAtPath<Texture>(path_a);
-                        var texAssetB = AssetDatabase.LoadAssetAtPath<Texture>(path_b);
+                        var texAssetA = AssetDatabase.LoadAssetAtPath<Texture>(pathA);
+                        var texAssetB = AssetDatabase.LoadAssetAtPath<Texture>(pathB);
                         if (texAssetA != null && texAssetB != null) {
                             var sizeA = texAssetA.width * texAssetA.height;
                             var sizeB = texAssetB.width * texAssetB.height;
-                            compareV = sort_type == SortType.TexSizeUp ? sizeA.CompareTo(sizeB) : sizeB.CompareTo(sizeA);
+                            compareV = sortType == SortType.TexSizeUp ? sizeA.CompareTo(sizeB) : sizeB.CompareTo(sizeA);
                         } else if (texAssetA != null)
                             compareV = -1;
                         else if (texAssetB != null) compareV = 1;
@@ -292,22 +290,22 @@ namespace EditorAssetTools {
                     case SortType.RefCountUp:
                         break;
                     default:
-                        throw new ArgumentOutOfRangeException(nameof(sort_type), sort_type, null);
+                        throw new ArgumentOutOfRangeException(nameof(sortType), sortType, null);
                 }
                 if (compareV != 0) return compareV;
-                var directoryA = Path.GetDirectoryName(path_a) + "/" + Path.GetFileNameWithoutExtension(path_a);
-                var directoryB = Path.GetDirectoryName(path_b) + "/" + Path.GetFileNameWithoutExtension(path_b);
+                var directoryA = Path.GetDirectoryName(pathA) + "/" + Path.GetFileNameWithoutExtension(pathA);
+                var directoryB = Path.GetDirectoryName(pathB) + "/" + Path.GetFileNameWithoutExtension(pathB);
                 compareV = String.Compare(directoryA, directoryB, StringComparison.Ordinal);
                 return compareV;
             }
-            _searchObjList.Sort((info_a, info_b) => {
+            _searchObjList.Sort((infoA, infoB) => {
                 var compareV = 0;
-                switch (sort_type) {
+                switch (sortType) {
                     case SortType.RefCountUp:
-                        compareV = info_a.refPathList.Count.CompareTo(info_b.refPathList.Count);
+                        compareV = infoA.refPathList.Count.CompareTo(infoB.refPathList.Count);
                         break;
                     case SortType.RefCountDown:
-                        compareV = info_b.refPathList.Count.CompareTo(info_a.refPathList.Count);
+                        compareV = infoB.refPathList.Count.CompareTo(infoA.refPathList.Count);
                         break;
                     case SortType.Path:
                         break;
@@ -318,12 +316,12 @@ namespace EditorAssetTools {
                     case SortType.TexSizeUp:
                         break;
                     default:
-                        throw new ArgumentOutOfRangeException(nameof(sort_type), sort_type, null);
+                        throw new ArgumentOutOfRangeException(nameof(sortType), sortType, null);
                 }
                 if (compareV != 0) {
                     return compareV;
                 }
-                compareV = CompareFunc(info_a.objPath, info_b.objPath);
+                compareV = CompareFunc(infoA.objPath, infoB.objPath);
                 return compareV;
             });
             foreach (var info in _searchObjList) {

@@ -68,12 +68,12 @@ namespace EditorAssetTools {
         private GameObject GetSceneRootGo(bool isUI) {
             if (!isUI) {
                 if (_sceneRootGo == null) {
-                    _sceneRootGo = new GameObject(this.Name);
+                    _sceneRootGo = new GameObject(Name);
                 }
                 return _sceneRootGo;
             }
             if (_sceneUIRootGo != null) return _sceneUIRootGo;
-            _sceneUIRootGo = new GameObject(this.Name + "_UI");
+            _sceneUIRootGo = new GameObject(Name + "_UI");
             var sceneCanvas = Object.FindObjectOfType<Canvas>();
             sceneCanvas = sceneCanvas != null ? sceneCanvas.rootCanvas : null;
             if (sceneCanvas != null) {
