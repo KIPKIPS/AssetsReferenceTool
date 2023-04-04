@@ -119,15 +119,15 @@ namespace EditorAssetTools {
                 foreach (var refPath in AssetDatabase.GetDependencies(assetPath, true)) {
                     var tex = AssetDatabase.LoadAssetAtPath<Texture>(refPath);
                     if (tex == null || (tex.width < _checkWidth && tex.height < _checkHeight)) continue;
-                    if (!targetDict.TryGetValue(tex, out var uInfo)) {
-                        uInfo = new SearchObjInfo();
+                    if (!targetDict.TryGetValue(tex, out var info)) {
+                        info = new SearchObjInfo();
                         var displayPath = refPath + $" {tex.width}X{tex.height}";
-                        uInfo.texDisplayPath = displayPath;
-                        uInfo.texPath = refPath;
-                        uInfo.texAsset = tex;
-                        targetDict[tex] = uInfo;
+                        info.texDisplayPath = displayPath;
+                        info.texPath = refPath;
+                        info.texAsset = tex;
+                        targetDict[tex] = info;
                     }
-                    uInfo.refPathList.Add(assetPath);
+                    info.refPathList.Add(assetPath);
                 }
             }
             _searchObjList.AddRange(targetDict.Values);
