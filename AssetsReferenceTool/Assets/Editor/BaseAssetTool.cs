@@ -19,9 +19,7 @@ namespace EditorAssetTools {
         readonly string[] kDefaultTargetDirectoryArray = new string[] {
             "选择预设目录",
             "Assets",
-            "Assets/Things/Prefabs/UI",
-            "Assets/Things/Effect/Prefab",
-            "Assets/Things/Unit"
+            "Assets/ResourcesAssets/Prefabs",
         };
         protected string targetDirectory { get; private set; }
 
